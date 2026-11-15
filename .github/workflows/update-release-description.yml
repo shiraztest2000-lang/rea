@@ -1,0 +1,59 @@
+name: Update release description
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Existing release tag, for example v0.0.1"
+        required: true
+        type: string
+      release_body:
+        description: "Complete new release description (this changes only the description)"
+        required: true
+        type: string
+      confirm:
+        description: 'Type UPDATE RELEASE BODY to confirm'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  update-release-description:
+    name: Update existing release description only
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate confirmation and update release body
+        uses: actions/github-script@v7
+        env:
+          TAG_NAME: ${{ inputs.tag_name }}
+          RELEASE_BODY: ${{ inputs.release_body }}
+          CONFIRM: ${{ inputs.confirm }}
+        with:
+          script: |
+            const tag = process.env.TAG_NAME.trim();
+            const body = process.env.RELEASE_BODY;
+            if (process.env.CONFIRM !== 'UPDATE RELEASE BODY') {
+              core.setFailed('Confirmation did not match. No release was changed.');
+              return;
+            }
+            if (!tag || !body.trim()) {
+              core.setFailed('Tag and release description are required. No release was changed.');
+              return;
+            }
+            const { owner, repo } = context.repo;
+            let release;
+            try {
+              ({ data: release } = await github.rest.repos.getReleaseByTag({ owner, repo, tag }));
+            } catch (error) {
+              core.setFailed(`Could not find an existing release for tag "${tag}". No release was changed.`);
+              return;
+            }
+            await github.rest.repos.updateRelease({
+              owner,
+              repo,
+              release_id: release.id,
+              body
+            });
+            core.info(`Updated description for ${release.html_url}. Assets, tag, title, and source files were not changed.`);
