@@ -1,14 +1,19 @@
+import { decodeStrictUtf8 } from "../../../domain/strictUtf8.js";
 import { fixedAllowanceOptions } from "../../../domain/fixedAllowanceRemediation.js";
 import { getHeapStatistics } from "node:v8";
 import { LosslessNumber, isSafeNumber } from "lossless-json";
 import type {
   ArtifactEntry,
   ArtifactReader,
-} from "../../../artifacts/ArtifactReader.js";
+} from "../../../resources/index.js";
 import {
   AnalysisResourceConstraintError,
   AnalysisUnsupportedTargetError,
 } from "../../../domain/analysisErrorCore.js";
+import {
+  isParseLimit,
+  parseLimitConstraint,
+} from "../../../domain/parseFailureAnalysisError.js";
 import {
   PLAYWRIGHT_TRACE_OPERATION,
   PLAYWRIGHT_TRACE_LIMITS,
@@ -17,7 +22,11 @@ import {
   type TraceEvent,
 } from "../../../domain/playwrightTrace/playwrightTrace.js";
 import { captureObject } from "../CaptureRedaction.js";
-import { CAPTURE_LIMITS, CaptureFormatError } from "../CaptureFormatError.js";
+import {
+  CAPTURE_FORMAT,
+  CAPTURE_LIMITS,
+  CaptureFormatError,
+} from "../CaptureFormatError.js";
 import { parseCaptureJson } from "../CaptureJson.js";
 import { TraceInventory, traceIdentity } from "./TraceInventory.js";
 import { traceLines, type TraceLineBudget } from "./TraceLines.js";
@@ -41,9 +50,7 @@ const readRecord = (bytes: Buffer): unknown => {
     );
   let value: string;
   try {
-    value = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(
-      bytes,
-    );
+    value = decodeStrictUtf8(bytes, "preserve");
   } catch (cause) {
     throw new CaptureFormatError(
       "malformed",
@@ -143,18 +150,18 @@ class TraceStreamRead {
       raw = readRecord(line.bytes);
     } catch (cause) {
       if (!(cause instanceof CaptureFormatError)) throw cause;
-      const { limit } = cause;
-      if (limit !== undefined) {
-        // The parser names the allowance it exhausted: node count or depth.
-        const { name, maximum } = limit;
+      if (isParseLimit(cause, CAPTURE_FORMAT)) {
+        const { name, maximum } = cause.failure.limit;
+        if (name !== "nesting-depth" && name !== "parser-nodes") throw cause;
         const nesting = name === "nesting-depth";
-        throw new AnalysisResourceConstraintError(
+        throw parseLimitConstraint(
           PLAYWRIGHT_TRACE_OPERATION,
           "memory",
-          cause.message,
-          { [nesting ? "nesting_levels" : "parser_nodes"]: maximum },
+          cause,
           {
-            cause,
+            reportedLimitContext: {
+              [nesting ? "nesting_levels" : "parser_nodes"]: maximum,
+            },
             ...fixedAllowanceOptions(
               nesting
                 ? "The Playwright trace record nesting allowance"

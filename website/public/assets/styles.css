@@ -264,9 +264,9 @@ section[id] {
 }
 .brand-logo {
   display: block;
-  flex: 0 0 auto;
   width: 52px;
   height: 52px;
+  flex: 0 0 auto;
   object-fit: contain;
 }
 .brand-name {
@@ -855,9 +855,6 @@ pre code {
 .contributor-card span {
   max-width: 100%;
   overflow-wrap: anywhere;
-}
-.contributors-source {
-  margin-block: 1.5rem 0;
 }
 
 .article-layout {

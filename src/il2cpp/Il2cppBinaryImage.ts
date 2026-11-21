@@ -7,32 +7,34 @@ import {
 import {
   BinaryFormatFailure,
   BinaryMappingFailure,
+  BinaryReader,
   BinaryResourceFailure,
   createFileMappingIndex,
   mappedFileOffset,
   isZeroFilledSpan,
   type BinaryContainer,
   type FileMappingIndex,
-} from "../native/metadata/BinaryContainer.js";
-import { readBinaryContainer } from "../native/metadata/readBinaryContainer.js";
+} from "../domain/binaryContainer.js";
+import {
+  readBinaryContainer,
+  readBinaryContainerCooperative,
+} from "../domain/native/readBinaryContainer.js";
 import {
   requireSelectedNativeImage,
   type SelectedNativeImage,
   type SliceSelectionInput,
-} from "../native/metadata/MachoSliceSelection.js";
+  selectMachoSlice,
+} from "../domain/apple/machoSliceSelection.js";
 import {
   parsePointerFixupsSteps,
   type PointerFixups,
-} from "../native/AppleMachoFixups.js";
-import {
-  parseMachoLayout,
-  UnsupportedMachoMetadataFormatError,
-} from "../native/AppleMachoSelection.js";
+} from "../domain/apple/appleMachoFixups.js";
+import { parseMachoLayout } from "../domain/apple/appleMachoSelection.js";
 import {
   readElfPointerValuesSteps,
   ElfPointerRelocationFailure,
   type ElfVirtualPointerWrites,
-} from "../native/metadata/ElfPointerRelocations.js";
+} from "../domain/native/elfPointerRelocations.js";
 import {
   Il2cppBinaryFormatFailure,
   IL2CPP_BINARY_BYTES,
@@ -72,7 +74,8 @@ export const requireIl2cppBinaryImage = (
   );
 
 export interface NativeImage {
-  readonly bytes: Buffer;
+  /** Stored file coordinates only; virtual translation and fixups stay separate. */
+  readonly stored: BinaryReader;
   readonly container: BinaryContainer;
   /** One image's immutable load mappings, shared by stored and loader-aware reads. */
   readonly fileMappings: FileMappingIndex;
@@ -83,28 +86,51 @@ export interface NativeImage {
   readonly machoPointerFixups?: PointerFixups;
 }
 
-/** Open one thin image; a universal Mach-O slice is selected before this. */
-export function* openImageSteps(image: Buffer): Generator<void, NativeImage> {
-  let container: BinaryContainer;
+const OPERATION = "inspect_il2cpp_metadata";
+
+const rejectContainer = (cause: unknown): never => {
+  if (cause instanceof BinaryResourceFailure)
+    throw new Il2cppBinaryFormatFailure(
+      "native-index-capacity",
+      cause.message,
+      cause.failure.limit.maximum,
+      "bytes",
+    );
+  if (cause instanceof BinaryFormatFailure)
+    throw new Il2cppBinaryFormatFailure(
+      cause.kind === "unsupported"
+        ? "unsupported-container"
+        : "malformed-container",
+      cause.message,
+    );
+  throw cause;
+};
+
+const readContainer = (image: Buffer): BinaryContainer => {
   try {
-    container = readBinaryContainer(image);
+    return readBinaryContainer(image, OPERATION);
   } catch (cause) {
-    if (cause instanceof BinaryResourceFailure)
-      throw new Il2cppBinaryFormatFailure(
-        "native-index-capacity",
-        cause.message,
-        cause.failure.limit.maximum,
-        "bytes",
-      );
-    if (cause instanceof BinaryFormatFailure)
-      throw new Il2cppBinaryFormatFailure(
-        cause.kind === "unsupported"
-          ? "unsupported-container"
-          : "malformed-container",
-        cause.message,
-      );
-    throw cause;
+    return rejectContainer(cause);
   }
+};
+
+export const readIl2cppBinaryContainerCooperative = async (
+  image: Buffer,
+  pause: () => Promise<void>,
+): Promise<BinaryContainer> => {
+  try {
+    return await readBinaryContainerCooperative(image, OPERATION, pause);
+  } catch (cause) {
+    return rejectContainer(cause);
+  }
+};
+
+/** Open one thin image; a universal Mach-O slice is selected before this. */
+export function* openImageSteps(
+  image: Buffer,
+  preparedContainer?: BinaryContainer,
+): Generator<void, NativeImage> {
+  const container = preparedContainer ?? readContainer(image);
   if (container.bits !== 64 || container.byte_order !== "little")
     throw new Il2cppBinaryFormatFailure(
       "unsupported-container",
@@ -124,6 +150,7 @@ export function* openImageSteps(image: Buffer): Generator<void, NativeImage> {
           zeroFills: container.zero_fills,
         },
         IL2CPP_BINARY_BYTES,
+        { symbolResolution: "image-definitions" },
       );
   } catch (cause) {
     if (cause instanceof ElfPointerRelocationFailure) {
@@ -148,12 +175,24 @@ export function* openImageSteps(image: Buffer): Generator<void, NativeImage> {
     );
   let machoPointerFixups: PointerFixups | undefined;
   if (container.format === "macho") {
-    try {
-      const layout = parseMachoLayout(
-        image,
+    const selected = selectMachoSlice(image, {
+      mode: "admitted",
+      architecture:
         binaryMetadataArchitecture(container.architecture) ??
-          container.architecture,
+        container.architecture,
+      slice: undefined,
+    });
+    // The image is the thin slice already selected; a refusal means the
+    // container's architecture names no CPU family this reader decodes.
+    if (!selected.ok)
+      throw new Il2cppBinaryFormatFailure(
+        selected.error.kind === "malformed"
+          ? "malformed-container"
+          : "unsupported-container",
+        selected.error.message,
       );
+    try {
+      const layout = parseMachoLayout(image, selected.value);
       machoPointerFixups = yield* parsePointerFixupsSteps(
         image,
         layout.fixups,
@@ -161,11 +200,6 @@ export function* openImageSteps(image: Buffer): Generator<void, NativeImage> {
         layout.baseAddress,
       );
     } catch (cause) {
-      if (cause instanceof UnsupportedMachoMetadataFormatError)
-        throw new Il2cppBinaryFormatFailure(
-          "unsupported-container",
-          cause.message,
-        );
       const failure = parseFailureFromCause(cause);
       if (failure !== undefined)
         throw new Il2cppBinaryFormatFailure(
@@ -173,13 +207,6 @@ export function* openImageSteps(image: Buffer): Generator<void, NativeImage> {
             ? "unsupported-container"
             : "malformed-container",
           failure.message,
-        );
-      // Mach-O slice selection reports an inconsistent FAT or CPU identity as
-      // a TypeError.
-      if (cause instanceof TypeError)
-        throw new Il2cppBinaryFormatFailure(
-          "malformed-container",
-          cause.message,
         );
       throw cause;
     }
@@ -201,7 +228,7 @@ export function* openImageSteps(image: Buffer): Generator<void, NativeImage> {
     ) ??
     0n;
   return {
-    bytes: image,
+    stored: new BinaryReader(image, true, container.format),
     container,
     fileMappings: createFileMappingIndex(
       container.mappings,
@@ -217,7 +244,7 @@ export function* openImageSteps(image: Buffer): Generator<void, NativeImage> {
 const readStoredWord = (image: NativeImage, address: bigint): bigint | null => {
   try {
     const offset = image.fileMappings.offset(address, 8);
-    return image.bytes.readBigUInt64LE(offset);
+    return image.stored.word(offset, 64);
   } catch (cause) {
     if (cause instanceof BinaryFormatFailure) return null;
     throw cause;
@@ -236,7 +263,7 @@ export const readUInt32 = (
       const value = image.elfPointerOverlay.unsignedAt(address, 4);
       return value === undefined ? "unknown" : Number(value);
     }
-    return image.bytes.readUInt32LE(image.fileMappings.offset(address, 4));
+    return image.stored.u32(image.fileMappings.offset(address, 4));
   } catch (cause) {
     if (cause instanceof BinaryFormatFailure) return null;
     throw cause;

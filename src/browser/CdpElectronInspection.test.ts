@@ -1,10 +1,12 @@
 import { DEFAULT_ASAR_HEADER_ADMISSION } from "../config/asarHeaderAdmission.js";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
+import { createTestTempDirectory } from "../../tests/fixtures/temporaryDirectory.js";
+
+import { fakeCdpEvents } from "../../tests/fixtures/fakeCdpEvents.js";
 
 import {
   fakeCdpSend,
@@ -16,7 +18,11 @@ import {
   captureFrames,
   inspectCdpElectronPage,
 } from "./CdpElectronInspection.js";
-import type { CdpEvent, CdpConnection } from "./CdpConnection.js";
+import {
+  receiveCdpEvent,
+  type CdpEvent,
+  type CdpConnection,
+} from "./CdpConnection.js";
 import {
   ingestElectronScriptEvent,
   type ElectronScriptDraft,
@@ -24,9 +30,7 @@ import {
 import { CDP_SCRIPT_SOURCE_BYTES_OMISSION_REASON } from "./CdpScriptSourceBudget.js";
 import { captureElectronScripts } from "./CdpElectronScripts.js";
 import { inspectElectronPageInputSchema } from "../domain/javascript/electronObservation.js";
-import type { ProgressReporter } from "../application/ProgressReporter.js";
-
-const temporary: string[] = [];
+import type { ProgressReporter } from "../ports/ProgressReporter.js";
 
 const inspectRaceConnection = (
   connection: CdpConnection,
@@ -74,8 +78,7 @@ it.each([
   "binds frame authorization to the tree read across file checks: %s",
   async (stage) => {
     const isAncestor = stage.endsWith("ancestor");
-    const root = await mkdtemp(join(tmpdir(), "rea-frame-generation-race-"));
-    temporary.push(root);
+    const root = await createTestTempDirectory("rea-frame-generation-race-");
     const main = join(root, "main.html"),
       child = join(root, "child.html"),
       script = join(root, "app.js");
@@ -86,7 +89,8 @@ it.each([
     ]);
     const mainUrl = pathToFileURL(main).href,
       childUrl = pathToFileURL(child).href;
-    let listener: (event: CdpEvent) => void = () => {};
+    const events = fakeCdpEvents();
+    const listener = events.emit;
     let reads = 0,
       fired = false;
     const emitScript = () => {
@@ -118,10 +122,7 @@ it.each([
       if (stage !== "initial") emitScript();
     };
     const connection = {
-      onEvent: (value: typeof listener) => {
-        listener = value;
-        return () => {};
-      },
+      onEvent: events.onEvent,
       send: fakeCdpSend(async (method) => {
         if (method === "Page.getFrameTree") {
           reads++;
@@ -224,14 +225,6 @@ it.each([
   },
 );
 
-afterEach(async () => {
-  await Promise.all(
-    temporary
-      .splice(0)
-      .map((path) => rm(path, { recursive: true, force: true })),
-  );
-});
-
 /** Raw lifecycle messages exercised by the final file-validation race. */
 const documentIdentityEvent = (
   kind: string,
@@ -291,10 +284,9 @@ it.each([
 ])(
   "preserves document identity through final file validation: %s",
   async (kind) => {
-    const root = await mkdtemp(
-      join(tmpdir(), "rea-electron-document-identity-"),
+    const root = await createTestTempDirectory(
+      "rea-electron-document-identity-",
     );
-    temporary.push(root);
     const main = join(root, "main.html"),
       child = join(root, "child.html"),
       script = join(root, "app.js");
@@ -305,7 +297,8 @@ it.each([
     ]);
     const mainUrl = pathToFileURL(main).href,
       childUrl = pathToFileURL(child).href;
-    let listener: (event: CdpEvent) => void = () => {};
+    const events = fakeCdpEvents();
+    const listener = events.emit;
     let reads = 0,
       fired = false;
     const inject = () => {
@@ -328,10 +321,7 @@ it.each([
       }
     };
     const connection = {
-      onEvent: (value: typeof listener) => {
-        listener = value;
-        return () => {};
-      },
+      onEvent: events.onEvent,
       send: fakeCdpSend(async (method) => {
         if (method === "Page.getFrameTree") {
           reads++;
@@ -410,8 +400,7 @@ it.each([
 it.each([7, null, "", "claimed-parent"])(
   "does not promote children when the enclosing root has a parent: %s",
   async (parentId) => {
-    const root = await mkdtemp(join(tmpdir(), "rea-electron-root-role-"));
-    temporary.push(root);
+    const root = await createTestTempDirectory("rea-electron-root-role-");
     const main = join(root, "index.html");
     await writeFile(main, "main");
     const completeness = new CdpCaptureCompleteness();
@@ -447,8 +436,7 @@ describe("Electron frame capture", () => {
   it.each([7, undefined])(
     "classifies a malformed child frame ID as unavailable: %s",
     async (childId) => {
-      const root = await mkdtemp(join(tmpdir(), "rea-electron-frame-"));
-      temporary.push(root);
+      const root = await createTestTempDirectory("rea-electron-frame-");
       const main = join(root, "index.html");
       const child = join(root, "child.html");
       await Promise.all([writeFile(main, "main"), writeFile(child, "child")]);
@@ -489,8 +477,7 @@ describe("Electron frame capture", () => {
   );
 
   it("preserves script records across context teardown and ID reuse", async () => {
-    const root = await mkdtemp(join(tmpdir(), "rea-electron-script-frame-"));
-    temporary.push(root);
+    const root = await createTestTempDirectory("rea-electron-script-frame-");
     const scriptPath = join(root, "app.js");
     await writeFile(scriptPath, "export const app = true;");
     const scripts: ElectronScriptDraft[] = [];
@@ -499,7 +486,7 @@ describe("Electron frame capture", () => {
     const completeness = new CdpCaptureCompleteness();
     const ingest = (method: string, params: unknown): void =>
       ingestElectronScriptEvent({
-        event: { method, params },
+        event: receiveCdpEvent({ method, params }),
         scripts,
         executionContextFrames,
         retention,
@@ -587,8 +574,7 @@ describe("Electron frame capture", () => {
 });
 
 it("admits a prefix and fitting suffix around an oversized Electron source", async () => {
-  const root = await mkdtemp(join(tmpdir(), "rea-electron-source-budget-"));
-  temporary.push(root);
+  const root = await createTestTempDirectory("rea-electron-source-budget-");
   const paths = await Promise.all(
     ["prefix.js", "oversized.js", "suffix.js"].map(async (name) => {
       const path = join(root, name);
@@ -712,8 +698,7 @@ it.each([
 ])(
   "detects tree-first document replacement $scope/read$stage/late=$lateEvent/changed=$changed/url=$urlChange/full=$fullReplay",
   async ({ scope, stage, lateEvent, changed, urlChange, fullReplay }) => {
-    const root = await mkdtemp(join(tmpdir(), "rea-tree-first-document-"));
-    temporary.push(root);
+    const root = await createTestTempDirectory("rea-tree-first-document-");
     const main = join(root, "main.html"),
       child = join(root, "child.html"),
       script = join(root, "app.js");
@@ -724,7 +709,8 @@ it.each([
     ]);
     const mainUrl = pathToFileURL(main).href,
       childUrl = pathToFileURL(child).href;
-    let listener: (event: CdpEvent) => void = () => {};
+    const events = fakeCdpEvents();
+    const listener = events.emit;
     let reads = 0;
     let replayed = false;
     const emitScript = (hash: string, frameId: string, contextId: number) => {
@@ -772,10 +758,7 @@ it.each([
       emitScript("after-grandchild", "grandchild", 11);
     };
     const connection = {
-      onEvent: (value: typeof listener) => {
-        listener = value;
-        return () => {};
-      },
+      onEvent: events.onEvent,
       send: fakeCdpSend(async (method) => {
         if (method === "Page.getFrameTree") {
           reads++;
@@ -838,8 +821,7 @@ it.each([
 it.each([2, 3])(
   "refuses a tree-first main frame identity replacement at read %s",
   async (stage) => {
-    const root = await mkdtemp(join(tmpdir(), "rea-electron-root-identity-"));
-    temporary.push(root);
+    const root = await createTestTempDirectory("rea-electron-root-identity-");
     const main = join(root, "main.html");
     await writeFile(main, "main");
     const mainUrl = pathToFileURL(main).href;
@@ -886,15 +868,15 @@ it.each([
 ])(
   "retains uncertainty when the main loader is missing at read $stage",
   async ({ stage, loader }) => {
-    const root = await mkdtemp(join(tmpdir(), "rea-electron-missing-loader-"));
-    temporary.push(root);
+    const root = await createTestTempDirectory("rea-electron-missing-loader-");
     const main = join(root, "main.html");
     const child = join(root, "child.html");
     await Promise.all([writeFile(main, "main"), writeFile(child, "child")]);
     const mainUrl = pathToFileURL(main).href;
     const childUrl = pathToFileURL(child).href;
     let reads = 0;
-    let listener: (event: CdpEvent) => void = () => {};
+    const events = fakeCdpEvents();
+    const listener = events.emit;
     const emitScript = (hash: string, id: number, frameId: string) => {
       listener({
         method: "Runtime.executionContextCreated",
@@ -906,10 +888,7 @@ it.each([
       });
     };
     const connection = {
-      onEvent: (value: typeof listener) => {
-        listener = value;
-        return () => {};
-      },
+      onEvent: events.onEvent,
       send: fakeCdpSend(async (method) => {
         if (method === "Page.getFrameTree") {
           reads++;
@@ -991,8 +970,7 @@ it.each([
 ])(
   "compares later root identity with the last proven loader: $loaders",
   async ({ loaders, changed }) => {
-    const root = await mkdtemp(join(tmpdir(), "rea-electron-loader-history-"));
-    temporary.push(root);
+    const root = await createTestTempDirectory("rea-electron-loader-history-");
     const main = join(root, "main.html");
     await writeFile(main, "main");
     const mainUrl = pathToFileURL(main).href;

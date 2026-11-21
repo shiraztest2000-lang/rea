@@ -1,4 +1,3 @@
-import type { InspectWebPageInput } from "../domain/browserObservation.js";
 import { sanitizeBrowserUrl } from "../domain/browserObservation.js";
 import type { WebPageInspection } from "../domain/browserObservationSchemas.js";
 import type { CdpFrameTree, CdpResourceTree } from "./protocol/CdpFrameTree.js";
@@ -146,14 +145,6 @@ export const classifyCdpFrameUrl = (
   };
 };
 
-/** Read the complete identity only when the protocol established it. */
-export const cdpFrameUrl = (
-  frame: UnknownRecord | undefined,
-): string | undefined => {
-  const observed = observeCdpFrameUrl(frame);
-  return observed.kind === "observed" ? observed.url : undefined;
-};
-
 /** Normalize every allowed resource. */
 export const captureResources = (
   tree: CdpResourceTree,
@@ -234,7 +225,6 @@ interface PendingDomMetadata {
 export function* captureDom(
   root: CdpCommandResult<"DOMSnapshot.captureSnapshot">,
   allowedOrigins: ReadonlySet<string>,
-  input: InspectWebPageInput,
   completeness?: CdpCaptureCompleteness,
 ): Generator<
   readonly DomSvgNodeQuery[],
