@@ -127,10 +127,18 @@ try {
   const parsedPackageLock = JSON.parse(packageLock.toString("utf8"));
   assert.equal(parsedPackageLock.packages?.[""]?.name, packageJson.name);
   assert.equal(parsedPackageLock.packages?.[""]?.version, packageJson.version);
+  const expectedPackageLockSha256 = sha256(
+    await readFile(join(root, "package-lock.json")),
+  );
   assert.equal(
     sha256(packageLock),
     manifest.packageLockSha256,
     "bundled package-lock.json digest mismatch",
+  );
+  assert.equal(
+    manifest.packageLockSha256,
+    expectedPackageLockSha256,
+    "portable dependency lock differs from the repository lock",
   );
 
   const node = join(bundleRoot, "runtime", "node.exe");
