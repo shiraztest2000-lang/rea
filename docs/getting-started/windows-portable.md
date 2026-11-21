@@ -12,6 +12,8 @@ installation or a global npm install.
 - A matching `native/windows/build/manifest.json` and
   `rea-windows-x64.node` produced by `npm run build:windows-native`
 - Network access to the official Node.js distribution and npm package sources
+- Microsoft Visual C++ Redistributable 2015–2022 x64 on target systems where
+  the required runtime libraries are not already installed
 
 ## Build and verify
 
