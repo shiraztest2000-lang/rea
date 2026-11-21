@@ -58,7 +58,8 @@ The bundle is relocatable. Extract it to its final location before running
 `rea.cmd setup`; agent configuration stores the absolute runtime path. If you
 move the bundle later, rerun setup for each affected agent. REA stores agent
 configuration in the normal per-user locations; the portable folder itself is
-not used as a profile store.
+not used as a profile store. To update, download the new portable ZIP and
+replace the folder; `rea update` targets package-manager installations.
 Analysis providers such as Ghidra and IDA remain separate prerequisites.
 
 The portable bundle is not the final standalone EXE or installer. Those are
