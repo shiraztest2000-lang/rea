@@ -1,3 +1,4 @@
+import { decodeStrictUtf8 } from "../domain/strictUtf8.js";
 import { readLeb128, ULEB64 } from "../domain/leb128.js";
 import type {
   FileMapping,
@@ -11,8 +12,12 @@ import {
   imageFileMappings,
   isZeroFilledSpan,
   type BinaryContainer,
-} from "../native/metadata/BinaryContainer.js";
-import { readBinaryContainer } from "../native/metadata/readBinaryContainer.js";
+} from "../domain/binaryContainer.js";
+import type { ZstandardFramePause } from "../domain/compression/zstandardExactFrame.js";
+import {
+  readBinaryContainer,
+  readBinaryContainerCooperative,
+} from "../domain/native/readBinaryContainer.js";
 import {
   goAnalysisBudgets,
   type GoAnalysisBudgets,
@@ -57,9 +62,31 @@ export interface ReadGoBinaryImageOptions {
 export const readGoBinaryImage = (
   bytes: Buffer,
   options?: ReadGoBinaryImageOptions,
+): GoBinaryImage =>
+  finishGoBinaryImage(
+    bytes,
+    options,
+    readBinaryContainer(bytes, "inspect_go_binary"),
+  );
+
+/** Same image as {@link readGoBinaryImage}. ELF section names yield through `pause`. */
+export const readGoBinaryImageCooperative = async (
+  bytes: Buffer,
+  options: ReadGoBinaryImageOptions | undefined,
+  pause: ZstandardFramePause,
+): Promise<GoBinaryImage> =>
+  finishGoBinaryImage(
+    bytes,
+    options,
+    await readBinaryContainerCooperative(bytes, "inspect_go_binary", pause),
+  );
+
+const finishGoBinaryImage = (
+  bytes: Buffer,
+  options: ReadGoBinaryImageOptions | undefined,
+  container: ReturnType<typeof readBinaryContainer>,
 ): GoBinaryImage => {
   const budgets = goAnalysisBudgets(options?.budgets);
-  const container = readBinaryContainer(bytes);
   const { format, architecture, bits, byte_order } = container;
   const stringLiterals =
     options?.includeStringLiterals === true
@@ -294,9 +321,7 @@ const inlineDataEnd = (
 
 const observedText = (bytes: Buffer): string | null => {
   try {
-    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(
-      bytes,
-    );
+    return decodeStrictUtf8(bytes, "preserve");
   } catch (cause) {
     if (cause instanceof TypeError) return null;
     throw cause;

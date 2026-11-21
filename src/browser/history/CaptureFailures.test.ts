@@ -1,11 +1,12 @@
 import { expect, it } from "vitest";
-import { ArtifactReaderFailure } from "../../artifacts/ArtifactReader.js";
+import { AnalysisCleanupLease } from "../../resources/AnalysisCleanupLease.js";
+import { ArtifactReaderFailure } from "../../resources/ArtifactReader.js";
 import {
   captureDecoderHeapContinuingRecovery,
   DEFAULT_CAPTURE_DECODER_HEAP,
 } from "../../config/captureDecoderHeap.js";
 import { projectAnalysisError } from "../../domain/analysisErrorProjection.js";
-import { analysisErrorProjectionSchema } from "../../contracts/errorSchemas.js";
+import { analysisErrorProjectionSchema } from "../../domain/analysisErrorProjectionSchema.js";
 import { inspectWebNetworkCaptureInputSchema } from "../../domain/webNetworkCapture.js";
 import {
   historicalCaptureFailure,
@@ -254,6 +255,7 @@ it.each(["before open", "during read"])(
     const cause = new ArtifactReaderFailure(
       "integrity",
       `Artifact changed ${stage}: ${path}`,
+      { integrityCheck: "container-identity" },
     );
     const error = historicalCaptureFailure(input, cause, "capture-read");
     const projected = projectAnalysisError(error);
@@ -323,6 +325,38 @@ it("retains actual command status and both diagnostic streams when cleanup also 
   expect(JSON.stringify(redacted)).not.toContain("private-marker");
   expect(redacted.code).toBe("cleanup_incomplete");
 });
+it("resolves the reported cleanup when the decoder's process lease confirms release", async () => {
+  const input = inspectWebNetworkCaptureInputSchema.parse({
+    capture_path: "/selected/input.har",
+    format: "har",
+  });
+  const cause = new OwnedCommandFailure(
+    "process",
+    "Observed command failure",
+    null,
+    "Observed cleanup failure",
+    undefined,
+    ["pid:42"],
+  );
+  let stopped = false;
+  const processLease = new AnalysisCleanupLease(async () => {
+    if (!stopped) throw new Error("decoder still running");
+  }, ["pid:42"]);
+  const error = historicalCaptureFailure(
+    input,
+    cause,
+    "decoder",
+    undefined,
+    DEFAULT_CAPTURE_DECODER_HEAP,
+    processLease,
+  );
+  expect(error.cleanupIncomplete).toBe(true);
+  await expect(processLease.release()).rejects.toThrow("decoder still running");
+  expect(error.cleanupIncomplete).toBe(true);
+  stopped = true;
+  await processLease.release();
+  expect(error.cleanupIncomplete).toBe(false);
+});
 it.each(["io", "unavailable"] as const)(
   "keeps %s read failures separate from malformed capture input",
   (reason) => {
@@ -376,7 +410,9 @@ it("preserves the exact cancellation reason and an earlier reader failure", () =
 
   const changed = historicalCaptureFailure(
     input,
-    new ArtifactReaderFailure("integrity", "Observed changed capture"),
+    new ArtifactReaderFailure("integrity", "Observed changed capture", {
+      integrityCheck: "container-identity",
+    }),
     "capture-read",
     { signal: controller.signal },
   );
@@ -449,12 +485,10 @@ it.each([
       capture_path: "/selected/capture.har",
       format: "har",
     });
-    const projected = projectAnalysisError(
-      protobufCaptureFailure(
-        input,
-        new CaptureFormatError(limit, "Protobuf limit reached"),
-      ),
-    );
+    const cause = new CaptureFormatError(limit, "Protobuf limit reached");
+    const error = protobufCaptureFailure(input, cause);
+    expect.soft(error.cause).toBe(cause);
+    const projected = projectAnalysisError(error);
     expect(projected).toMatchObject({
       code: "resource_constraint",
       retryable: false,
@@ -463,6 +497,7 @@ it.each([
         action: expect.stringContaining(`Increase ${parameter}`),
       },
     });
+    expect(projected.remediation.action).toContain(String(limit.maximum));
   },
 );
 

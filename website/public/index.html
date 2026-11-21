@@ -8,6 +8,28 @@
       name="description"
       content="Reverse engineer apps, binaries and browser behavior with your coding agent. Follow clear guides and try interactive examples with REA."
     />
+    <!-- website:theme:start -->
+    <meta name="theme-color" content="#ffffff" />
+    <script>
+      (() => {
+        let theme;
+        try {
+          theme = localStorage.getItem("rea-theme");
+        } catch {}
+        if (theme !== "light" && theme !== "dark")
+          theme = matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light";
+        document.documentElement.dataset.theme = theme;
+        document.querySelector('meta[name="theme-color"]').content =
+          theme === "dark" ? "#1e1e2e" : "#ffffff";
+      })();
+    </script>
+    <script defer src="./assets/theme.js"></script>
+    <!-- website:theme:end -->
+    <link rel="icon" href="assets/rea-logo-128.png" type="image/png" sizes="128x128" />
+    <link rel="apple-touch-icon" href="assets/rea-logo-128.png" />
+    <link rel="stylesheet" href="assets/styles.css" />
     <!-- website:sharing:start -->
     <!-- prettier-ignore -->
     <link rel="canonical" href="https://rea.tools/" />
@@ -100,14 +122,7 @@
       content="REA: Find out how software works. Reverse engineering with your coding agent."
     />
     <!-- website:sharing:end -->
-    <!-- website:theme:start -->
-    <meta name="theme-color" content="#ffffff" />
-    <!-- Apply the saved theme before styles load, to avoid a flash on navigation. -->
-    <script src="./assets/theme.js"></script>
-    <!-- website:theme:end -->
-    <link rel="icon" href="assets/rea-logo-128.png" type="image/png" sizes="128x128" />
-    <link rel="apple-touch-icon" href="assets/rea-logo-128.png" />
-    <link rel="stylesheet" href="assets/styles.css" />
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
     <script src="assets/main.js" defer></script>
     <script type="module" src="assets/home.js"></script>
     <script type="module" src="assets/dino-demo.js"></script>
@@ -119,7 +134,8 @@
     <header class="site-header">
       <div class="container header-inner">
         <a class="brand" href="./" aria-label="REA home"
-          ><img class="brand-logo" src="./assets/rea-logo-128.png" alt="" width="52" height="52" /><span class="brand-caption" data-i18n-skip>Reverse Engineer Anything</span></a
+          ><span class="brand-name">REA</span
+          ><span class="brand-caption" data-i18n-skip>Reverse Engineer Anything</span></a
         >
         <nav class="navigation" aria-label="Main navigation">
           <a href="./get-started/" class="nav-start">Get started</a>
@@ -515,7 +531,9 @@
                     <img
                       class="expert-illustration"
                       src="assets/figures/analyst-thinking.svg"
-                      alt=""
+                      alt="An analyst thinking at a computer"
+                      title="Illustrative expert reasoning"
+                      loading="lazy"
                       width="160"
                       height="120"
                     />
