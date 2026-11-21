@@ -191,7 +191,7 @@ await withVerifierFixture(fixture, async () => {
   const runLauncher = (args, options = {}) =>
     run(
       process.env.ComSpec ?? "cmd.exe",
-      ["/d", "/c", [`"${launcher}"`, ...args].join(" ")],
+      ["/d", "/s", "/c", `""${launcher}" ${args.join(" ")}"`],
       { cwd: workspace, ...options },
     );
   const launcherOutput = runLauncher(["--version"]).trim();
@@ -312,7 +312,7 @@ await withVerifierFixture(fixture, async () => {
   });
   transport = new StdioClientTransport({
     command: process.env.ComSpec ?? "cmd.exe",
-    args: ["/d", "/c", `"${join(bundleRoot, "rea-mcp.cmd")}"`],
+    args: ["/d", "/s", "/c", `""${join(bundleRoot, "rea-mcp.cmd")}""`],
     cwd: workspace,
     env: setupEnvironment,
     stderr: "pipe",
