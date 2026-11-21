@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       release_body:
-        description: "Complete new release description (this changes only the description)"
+        description: "Replace the release description body only"
         required: true
         type: string
       confirm:
