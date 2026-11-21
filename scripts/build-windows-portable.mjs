@@ -151,16 +151,18 @@ try {
     generatedAt: new Date().toISOString(),
   };
   await writeFile(join(bundleRoot, "portable-manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
-  await writeFile(
-    join(bundleRoot, "rea.cmd"),
-    '@echo off\r\nsetlocal\r\nset "REA_PORTABLE_ROOT=%~dp0"\r\n"%REA_PORTABLE_ROOT%runtime\\node.exe" "%REA_PORTABLE_ROOT%app\\node_modules\\${packageJson.name}\\scripts\\rea.mjs" %*\r\nexit /b %ERRORLEVEL%\r\n',
-    "utf8",
-  );
-  await writeFile(
-    join(bundleRoot, "rea-mcp.cmd"),
-    '@echo off\r\nsetlocal\r\nset "REA_PORTABLE_ROOT=%~dp0"\r\n"%REA_PORTABLE_ROOT%runtime\\node.exe" "%REA_PORTABLE_ROOT%app\\node_modules\\rea-agents\\scripts\\rea.mjs" mcp %*\r\nexit /b %ERRORLEVEL%\r\n',
-    "utf8",
-  );
+  const entrypoint = `app\\node_modules\\${packageJson.name}\\scripts\\rea.mjs`;
+  const launcher = (command) =>
+    [
+      "@echo off",
+      "setlocal",
+      'set "REA_PORTABLE_ROOT=%~dp0"',
+      `"%REA_PORTABLE_ROOT%runtime\\node.exe" "%REA_PORTABLE_ROOT%${entrypoint}" ${command}%*`,
+      "exit /b %ERRORLEVEL%",
+      "",
+    ].join("\\r\\n");
+  await writeFile(join(bundleRoot, "rea.cmd"), launcher(""), "utf8");
+  await writeFile(join(bundleRoot, "rea-mcp.cmd"), launcher("mcp "), "utf8");
   await writeFile(
     join(bundleRoot, "README_FA.txt"),
     [
