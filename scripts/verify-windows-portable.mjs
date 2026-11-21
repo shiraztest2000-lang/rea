@@ -251,6 +251,12 @@ try {
       "removed",
       `Portable uninstall did not remove ${id}`,
     );
+  const preservedOpenCode = await readFile(
+    setupEnvironment.OPENCODE_CONFIG,
+    "utf8",
+  );
+  assert.ok(preservedOpenCode.includes("// preserve user settings"));
+  assert.equal(parseJsonc(preservedOpenCode).theme, "dark");
 
   const doctor = JSON.parse(run(node, [entry, "mcp", "doctor", "--json"]));
   assert.equal(doctor.healthy, true, "portable MCP doctor is unhealthy");
