@@ -186,7 +186,7 @@ try {
   await mkdir(join(home, ".config", "opencode"), { recursive: true });
   await writeFile(
     setupEnvironment.OPENCODE_CONFIG,
-    '{\\n  // preserve user settings\\n  "theme": "dark",\\n}\\n',
+    '{\n  // preserve user settings\n  "theme": "dark",\n}\n',
   );
   const setupArgs = [
     "setup",
