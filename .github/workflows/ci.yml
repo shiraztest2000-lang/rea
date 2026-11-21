@@ -645,6 +645,8 @@ jobs:
             coverage/
           include-hidden-files: true
           if-no-files-found: error
+          include-hidden-files: true
+          compression-level: 0
           retention-days: 30
       # Default-branch runs only. Pull-request artifacts share this name and
       # the lookup reads one page, so publishing them would hide main.
