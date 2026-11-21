@@ -6,9 +6,7 @@ import { spawnSync } from "node:child_process";
 import {
   access,
   mkdir,
-  mkdtemp,
   readFile,
-  rm,
   stat,
 } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -18,6 +16,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { parse as parseJsonc } from "jsonc-parser";
 import { supportedClients } from "../dist/application/SupportedClients.js";
 import { verifyCompleteToolCatalog } from "./lib/verify-package-core.mjs";
+import { VerifierFixture } from "./lib/verifier-fixture.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const packageJson = JSON.parse(
@@ -33,13 +32,14 @@ const archive = resolve(
     ),
 );
 const expectedRoot = `REA-${packageJson.version}-windows-x64`;
-const workspaceRoot = join(root, ".cache");
-await mkdir(workspaceRoot, { recursive: true });
-const workspaceParent = join(workspaceRoot, "portable space test");
+const workspaceParent = join(root, ".cache", "portable space test");
 await mkdir(workspaceParent, { recursive: true });
-const workspace = await mkdtemp(
-  join(workspaceParent, "rea-windows-portable-verify-"),
-);
+const fixture = await VerifierFixture.open({
+  prefix: "rea-windows-portable-verify-",
+  parent: workspaceParent,
+  private: false,
+});
+const workspace = fixture.path;
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
@@ -310,7 +310,7 @@ try {
 } finally {
   try { await client?.close(); } finally {
     try { await transport?.close(); } finally {
-      await rm(workspace, { recursive: true, force: true });
+      await fixture.release();
     }
   }
 }
