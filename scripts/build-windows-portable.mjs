@@ -138,24 +138,27 @@ try {
   await access(packageArchive);
   const packageSha256 = sha256(await readFile(packageArchive));
 
-  run(process.execPath, [
-    npmCli,
-    "install",
-    "--prefix",
-    appDirectory,
-    "--no-save",
-    "--no-package-lock",
-    "--no-audit",
-    "--no-fund",
-    "--omit=dev",
+  run("tar.exe", [
+    "-xzf",
     packageArchive,
+    "-C",
+    appDirectory,
+    "--strip-components=1",
   ]);
-  const installedPackage = join(appDirectory, "node_modules", packageJson.name);
-  await access(join(installedPackage, "scripts", "rea.mjs"));
-  await access(join(installedPackage, "dist", "mcp", "main.js"));
+  await copyFile(
+    join(root, "package-lock.json"),
+    join(appDirectory, "package-lock.json"),
+  );
+  run(
+    process.execPath,
+    [npmCli, "ci", "--omit=dev", "--no-audit", "--no-fund"],
+    { cwd: appDirectory },
+  );
+  await access(join(appDirectory, "scripts", "rea.mjs"));
+  await access(join(appDirectory, "dist", "mcp", "main.js"));
   await access(
     join(
-      installedPackage,
+      appDirectory,
       "native",
       "windows",
       "build",
@@ -163,7 +166,7 @@ try {
     ),
   );
   await access(
-    join(installedPackage, "native", "windows", "build", "manifest.json"),
+    join(appDirectory, "native", "windows", "build", "manifest.json"),
   );
 
   const node = await downloadVerifiedNodeArchive();
@@ -214,7 +217,7 @@ try {
     join(bundleRoot, "portable-manifest.json"),
     `${JSON.stringify(manifest, null, 2)}\n`,
   );
-  const entrypoint = `app\\node_modules\\${packageJson.name}\\scripts\\rea.mjs`;
+  const entrypoint = "app\\scripts\\rea.mjs";
   const launcher = (command) => {
     const runtimePath = "%REA_PORTABLE_ROOT%runtime\\node.exe";
     const entryPath = `%REA_PORTABLE_ROOT%${entrypoint}`;
