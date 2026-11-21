@@ -645,8 +645,6 @@ jobs:
             coverage/
           include-hidden-files: true
           if-no-files-found: error
-          include-hidden-files: true
-          compression-level: 0
           retention-days: 30
       # Default-branch runs only. Pull-request artifacts share this name and
       # the lookup reads one page, so publishing them would hide main.
@@ -1133,6 +1131,8 @@ jobs:
             .artifacts/windows-portable/REA-*-windows-x64.zip
             .artifacts/windows-portable/REA-*-windows-x64.zip.sha256
           if-no-files-found: error
+          include-hidden-files: true
+          compression-level: 0
           retention-days: 30
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         if: matrix.suite == 'package'
