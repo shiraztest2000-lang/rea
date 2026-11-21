@@ -124,7 +124,7 @@ try {
   assert.match(manifest.npmPackageSha256, /^[a-f0-9]{64}$/u);
 
   const node = join(bundleRoot, "runtime", "node.exe");
-  const app = join(bundleRoot, "app", "node_modules", packageJson.name);
+  const app = join(bundleRoot, "app");
   const entry = join(app, "scripts", "rea.mjs");
   for (const path of [
     node,
