@@ -9,6 +9,7 @@ import {
   mkdtemp,
   readFile,
   rm,
+  stat,
 } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
