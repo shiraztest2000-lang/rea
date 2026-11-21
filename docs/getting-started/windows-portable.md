@@ -46,8 +46,11 @@ Extract the ZIP anywhere and run from its root:
 .\rea-mcp.cmd
 ```
 
-The bundle is relocatable. REA stores agent configuration in the normal
-per-user locations; the portable folder itself is not used as a profile store.
+The bundle is relocatable. Extract it to its final location before running
+`rea.cmd setup`; agent configuration stores the absolute runtime path. If you
+move the bundle later, rerun setup for each affected agent. REA stores agent
+configuration in the normal per-user locations; the portable folder itself is
+not used as a profile store.
 Analysis providers such as Ghidra and IDA remain separate prerequisites.
 
 The portable bundle is not the final standalone EXE or installer. Those are
