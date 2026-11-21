@@ -41,13 +41,14 @@ function run(command, args, options = {}) {
     ...options,
   });
   if (result.error) throw result.error;
-  if (result.status !== 0)
+  if (result.status !== 0) {
     const message = [
       `${command} failed (${String(result.status)}):`,
       result.stdout,
       result.stderr,
     ].join("\n");
     throw new Error(message);
+  }
   return result.stdout;
 }
 
@@ -63,7 +64,10 @@ async function downloadVerifiedNodeArchive() {
     fetch(`${base}${filename}`, { signal: AbortSignal.timeout(180_000) }),
   ]);
   if (!checksumResponse.ok || !archiveResponse.ok) {
-    const details = `checksums=${checksumResponse.status}, archive=${archiveResponse.status}`;
+    const details = [
+      `checksums=${checksumResponse.status},`,
+      `archive=${archiveResponse.status}`,
+    ].join(" ");
     throw new Error(`Official Node.js download failed: ${details}`);
   }
   const checksums = await checksumResponse.text();
