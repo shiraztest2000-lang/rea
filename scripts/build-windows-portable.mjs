@@ -241,8 +241,8 @@ try {
         "Redistributable 2015–2022 نسخه x64 نیز لازم است.",
       "برای اتصال به ابزارهای تحلیلی مانند Ghidra یا IDA، نصب و پیکربندی " +
         "جداگانه آن ابزارها همچنان لازم است.",
-      "پوشه را می‌توان به مسیر دیگری منتقل کرد. فایل‌های تنظیمات Agent در " +
-        "مسیرهای استاندارد کاربر ذخیره می‌شوند.",
+      "پیش از اجرای rea.cmd setup پوشه را در مسیر نهایی قرار دهید؛ پس از " +
+        "جابه‌جایی، تنظیمات هر Agent را دوباره اجرا کنید.",
       "",
       "سازنده بسته: ShirazTipsy",
       "مخزن: https://github.com/shiraztest2000-lang/rea",
@@ -269,8 +269,8 @@ try {
         "if its runtime libraries are absent.",
       "Analysis providers such as Ghidra and IDA remain separate " +
         "prerequisites and must be installed/configured when needed.",
-      "The folder is relocatable. Agent configuration is stored in the " +
-        "normal per-user locations.",
+      "Extract to the final location before running setup; rerun setup for " +
+        "each agent after moving the folder.",
       "",
       "Packaged by: ShirazTipsy",
       "Source: https://github.com/shiraztest2000-lang/rea",
