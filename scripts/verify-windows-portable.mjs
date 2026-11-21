@@ -128,6 +128,7 @@ try {
   const entry = join(app, "scripts", "rea.mjs");
   for (const path of [
     node,
+    join(bundleRoot, "runtime", "NODE-LICENSE"),
     entry,
     join(app, "dist", "mcp", "main.js"),
     join(app, "native", "windows", "build", "manifest.json"),
