@@ -15,6 +15,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
+import { verifyCompleteToolCatalog } from "./lib/verify-package-core.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const packageJson = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
@@ -132,8 +133,7 @@ try {
   });
   client = new Client({ name: "rea-portable-verifier", version: "1.0.0" });
   await client.connect(transport);
-  const tools = await client.listTools();
-  assert.ok(Array.isArray(tools.tools) && tools.tools.length > 0, "portable MCP returned no tools");
+  const toolCatalog = await verifyCompleteToolCatalog(client);
   const prompts = await client.listPrompts();
   assert.ok(Array.isArray(prompts.prompts), "portable MCP prompt catalog is invalid");
 
@@ -151,7 +151,7 @@ try {
     cli: true,
     cmdLauncher: true,
     mcpDoctor: true,
-    mcpTools: tools.tools.length,
+    mcpTools: toolCatalog.length,
     mcpPrompts: prompts.prompts.length,
     author: manifest.author,
   }, null, 2)}\n`);
