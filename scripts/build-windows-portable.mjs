@@ -13,6 +13,7 @@ import {
 } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { satisfies } from "semver";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const packageJson = JSON.parse(
@@ -99,6 +100,13 @@ try {
     );
   if (!/^\d+\.\d+\.\d+$/u.test(nodeVersion))
     throw new Error(`Invalid pinned Node.js version in .nvmrc: ${nodeVersion}`);
+  const engineRange = packageJson.engines?.node ?? "";
+  if (!satisfies(nodeVersion, engineRange)) {
+    const message =
+      `Pinned Node.js ${nodeVersion} does not satisfy ` +
+      `package engine range ${engineRange}`;
+    throw new Error(message);
+  }
   if (!npmCli) {
     throw new Error(
       "npm_execpath is required; run this builder from an npm-enabled " +
