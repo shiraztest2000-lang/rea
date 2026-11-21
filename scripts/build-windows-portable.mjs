@@ -73,10 +73,7 @@ try {
     throw new Error("The portable Windows bundle must be built on a Windows x64 runner.");
   if (!/^\d+\.\d+\.\d+$/u.test(nodeVersion))
     throw new Error(`Invalid pinned Node.js version in .nvmrc: ${nodeVersion}`);
-  if (npmCli) {
-    run(process.execPath, [npmCli, "run", "build:cached"]);
-    run(process.execPath, [npmCli, "run", "verify:windows-native:artifact"]);
-  } else {
+  if (!npmCli) {
     throw new Error("npm_execpath is required; run this builder from an npm-enabled Windows environment.");
   }
 
@@ -94,6 +91,7 @@ try {
   const packed = JSON.parse(
     run(process.execPath, [npmCli, "pack", "--json", "--pack-destination", packedDirectory]),
   );
+  run(process.execPath, [npmCli, "run", "verify:windows-native:artifact"]);
   const packageFile = packed[0]?.filename;
   if (typeof packageFile !== "string") throw new Error("npm pack did not produce a package archive.");
   const packageArchive = join(packedDirectory, packageFile);
@@ -214,6 +212,7 @@ try {
   );
 
   await rm(outputArchive, { force: true });
+  await rm(`${outputArchive}.sha256`, { force: true });
   run("tar.exe", [
     "-a",
     "-c",
