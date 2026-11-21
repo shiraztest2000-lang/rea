@@ -243,6 +243,8 @@ try {
         "جداگانه آن ابزارها همچنان لازم است.",
       "پیش از اجرای rea.cmd setup پوشه را در مسیر نهایی قرار دهید؛ پس از " +
         "جابه‌جایی، تنظیمات هر Agent را دوباره اجرا کنید.",
+      "برای به‌روزرسانی، ZIP نسخه جدید را دریافت و پوشه را جایگزین کنید؛ " +
+        "فرمان rea update مخصوص نصب‌های package manager است.",
       "",
       "سازنده بسته: ShirazTipsy",
       "مخزن: https://github.com/shiraztest2000-lang/rea",
@@ -271,6 +273,8 @@ try {
         "prerequisites and must be installed/configured when needed.",
       "Extract to the final location before running setup; rerun setup for " +
         "each agent after moving the folder.",
+      "To update, download the new portable ZIP and replace this folder; " +
+        "rea update targets package-manager installations.",
       "",
       "Packaged by: ShirazTipsy",
       "Source: https://github.com/shiraztest2000-lang/rea",
