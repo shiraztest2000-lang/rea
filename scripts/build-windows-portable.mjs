@@ -197,6 +197,9 @@ try {
   const nodeExecutableSha256 = sha256(
     await readFile(join(runtimeDirectory, "node.exe")),
   );
+  const packageLockSha256 = sha256(
+    await readFile(join(appDirectory, "package-lock.json")),
+  );
   const manifest = {
     schemaVersion: 1,
     product: "REA",
@@ -209,6 +212,7 @@ try {
     nodeExecutableSha256,
     npmPackage: packageJson.name,
     npmPackageSha256: packageSha256,
+    packageLockSha256,
     author: "ShirazTipsy",
     repository: "https://github.com/shiraztest2000-lang/rea",
     generatedAt: new Date().toISOString(),
