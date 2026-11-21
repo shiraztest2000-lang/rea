@@ -12,6 +12,7 @@ Setup previews configuration changes and asks for approval before applying them.
 | Diagnose one task                     | [Scoped readiness checks](#check-readiness-for-your-task)                                                           |
 | Configure an analysis engine          | [Hopper](#hopper), [Ghidra](#ghidra), the [IDA guide](../providers/ida-provider.md), or [Kuna](../kuna-provider.md) |
 | Update or remove REA                  | [Maintenance](#diagnose-update-and-remove)                                                                          |
+| Use the portable Windows CLI/MCP      | [Windows portable package](windows-portable.md)                                                                     |
 | Resolve a client-specific problem     | [Client configuration](client-configuration.md)                                                                     |
 
 ## Start setup

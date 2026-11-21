@@ -21,6 +21,7 @@ const STEP_COSTS = [
       "Retain available reverse tools diagnostics",
       "Publish successful timing history",
       "Retain the exact qualified release package",
+      "Retain Windows portable bundle",
     ]),
   },
   {

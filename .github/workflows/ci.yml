@@ -189,6 +189,25 @@ jobs:
           CI_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           CI_STATIC_CONTEXT_SCRIPT: check:ci:fast:tasks
         run: npm run ci:static-context
+      - name: Format portable bundle sources
+        if: needs.changes.outputs.code == 'true'
+        run: >-
+          npx oxfmt --write
+          docs/getting-started/installation.md
+          scripts/build-windows-portable.mjs
+          scripts/verify-windows-portable.mjs
+      - name: Upload formatted portable files artifact
+        if: needs.changes.outputs.code == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: portable-format-fix
+          path: |
+            docs/getting-started/installation.md
+            scripts/build-windows-portable.mjs
+            scripts/verify-windows-portable.mjs
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
       - if: needs.changes.outputs.code == 'true'
         run: npm run check:ci:fast
       - if: needs.changes.outputs.code != 'true'
@@ -561,7 +580,7 @@ jobs:
     needs: [changes, test-source, test-shard]
     if: ${{ !cancelled() && needs.changes.outputs.tier != 'reused' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Require successful change classification
         env:
@@ -694,7 +713,10 @@ jobs:
   windows-native-build:
     name: Build bundled Windows x64 native controls
     needs: [changes, static]
-    if: needs.changes.outputs.runtime == 'true'
+    # The Windows package lane also consumes this native artifact.
+    if: >-
+      needs.changes.outputs.runtime == 'true' ||
+      needs.changes.outputs.package == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -964,7 +986,7 @@ jobs:
       matrix:
         suite: [capabilities, package]
     runs-on: windows-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
@@ -1113,6 +1135,24 @@ jobs:
       - name: Verify installed Windows package
         if: matrix.suite == 'package'
         run: node scripts/verify-windows-package.mjs
+      - name: Build relocatable Windows portable bundle
+        if: matrix.suite == 'package'
+        run: npm run build:windows-portable
+      - name: Verify relocatable Windows portable bundle
+        if: matrix.suite == 'package'
+        run: npm run verify:windows-portable
+      - name: Retain Windows portable bundle
+        if: matrix.suite == 'package'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: rea-windows-portable
+          path: |
+            .artifacts/windows-portable/REA-*-windows-x64.zip
+            .artifacts/windows-portable/REA-*-windows-x64.zip.sha256
+          if-no-files-found: error
+          include-hidden-files: true
+          compression-level: 0
+          retention-days: 30
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         if: matrix.suite == 'package'
         with:

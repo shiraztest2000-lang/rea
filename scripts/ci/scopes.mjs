@@ -260,6 +260,7 @@ const PATH_SCOPES = {
     UBUNTU_ARCHIVE_ACTION,
     ".github/actions/host-apt-packages/action.{yml,yaml}",
     "scripts/build-windows-native.mjs",
+    "scripts/build-windows-portable.mjs",
     "scripts/windows-capabilities.mjs",
     "scripts/prepack.mjs",
     "scripts/prepare.mjs",

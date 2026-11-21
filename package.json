@@ -3,6 +3,7 @@
   "mcpName": "io.github.morluto/rea",
   "version": "6.10.1",
   "description": "Reverse engineer anything from your terminal or agent with one CLI and MCP server.",
+  "author": "ShirazTipsy",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -363,7 +364,9 @@
     "licenses:generate": "node scripts/generate-third-party-inventory.mjs",
     "licenses:check": "node scripts/generate-third-party-inventory.mjs --check",
     "lint:typed": "node scripts/ci/static-check-report.mjs typed-lint",
-    "knip:production": "node scripts/ci/production-reachability-report.mjs"
+    "knip:production": "node scripts/ci/production-reachability-report.mjs",
+    "build:windows-portable": "node scripts/build-windows-portable.mjs",
+    "verify:windows-portable": "node scripts/verify-windows-portable.mjs"
   },
   "lint-staged": {
     "*.{cjs,cts,js,jsx,mjs,mts,ts,tsx}": [
