@@ -260,7 +260,10 @@ try {
   assert.equal(parseJsonc(preservedOpenCode).theme, "dark");
 
   const doctor = JSON.parse(
-    run(node, [entry, "mcp", "doctor", "--json"], { cwd: workspace }),
+    run(node, [entry, "mcp", "doctor", "--json"], {
+      cwd: workspace,
+      env: setupEnvironment,
+    }),
   );
   assert.equal(doctor.healthy, true, "portable MCP doctor is unhealthy");
   assert.equal(
@@ -273,7 +276,7 @@ try {
     command: process.env.ComSpec ?? "cmd.exe",
     args: ["/d", "/c", `"${join(bundleRoot, "rea-mcp.cmd")}"`],
     cwd: workspace,
-    env: { ...process.env },
+    env: setupEnvironment,
     stderr: "pipe",
   });
   client = new Client({ name: "rea-portable-verifier", version: "1.0.0" });
