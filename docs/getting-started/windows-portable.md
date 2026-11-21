@@ -12,7 +12,9 @@ Node.js installation or a global npm install.
 - A matching `native/windows/build/manifest.json` and
   `rea-windows-x64.node` from the CI `windows-native-controls` artifact.
   The native artifact builder itself runs on Linux with MinGW-w64; the portable
-  package and its runtime tests run on Windows x64.
+  package and its runtime tests run on Windows x64. Download the CI artifact
+  and extract its manifest and addon into `native/windows/build/`; do not use
+  an artifact built for another REA version.
 - Network access to the official Node.js distribution and npm package sources
 - Microsoft Visual C++ Redistributable 2015–2022 x64 on target systems where
   the required runtime libraries are not already installed
