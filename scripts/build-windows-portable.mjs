@@ -91,7 +91,7 @@ try {
   ]);
 
   const packed = JSON.parse(
-    run(process.execPath, [npmCli, "pack", "--json", "--pack-destination", packedDirectory]),
+    run(process.execPath, [npmCli, "pack", "--ignore-scripts", "--json", "--pack-destination", packedDirectory]),
   );
   const packageFile = packed[0]?.filename;
   if (typeof packageFile !== "string") throw new Error("npm pack did not produce a package archive.");
@@ -131,6 +131,9 @@ try {
     }
   }
 
+  const nodeExecutableSha256 = sha256(
+    await readFile(join(runtimeDirectory, "node.exe")),
+  );
   const manifest = {
     schemaVersion: 1,
     product: "REA",
@@ -140,6 +143,7 @@ try {
     nodeVersion,
     nodeArchive: node.filename,
     nodeArchiveSha256: node.sha256,
+    nodeExecutableSha256,
     npmPackage: packageJson.name,
     npmPackageSha256: packageSha256,
     author: "ShirazTipsy",
@@ -149,7 +153,7 @@ try {
   await writeFile(join(bundleRoot, "portable-manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
   await writeFile(
     join(bundleRoot, "rea.cmd"),
-    '@echo off\r\nsetlocal\r\nset "REA_PORTABLE_ROOT=%~dp0"\r\n"%REA_PORTABLE_ROOT%runtime\\node.exe" "%REA_PORTABLE_ROOT%app\\node_modules\\rea-agents\\scripts\\rea.mjs" %*\r\nexit /b %ERRORLEVEL%\r\n',
+    '@echo off\r\nsetlocal\r\nset "REA_PORTABLE_ROOT=%~dp0"\r\n"%REA_PORTABLE_ROOT%runtime\\node.exe" "%REA_PORTABLE_ROOT%app\\node_modules\\${packageJson.name}\\scripts\\rea.mjs" %*\r\nexit /b %ERRORLEVEL%\r\n',
     "utf8",
   );
   await writeFile(
@@ -230,6 +234,7 @@ try {
       packageSha256,
       nodeVersion,
       nodeArchiveSha256: node.sha256,
+      nodeExecutableSha256,
       folderName,
       author: "ShirazTipsy",
     }, null, 2)}\n`,
