@@ -31,7 +31,7 @@ if (process.platform !== "win32" || process.arch !== "x64")
   throw new Error(
     "The portable Windows bundle must be built on a Windows x64 runner.",
   );
-if (!/^\\d+\\.\\d+\\.\\d+$/u.test(nodeVersion))
+if (!/^\d+\.\d+\.\d+$/u.test(nodeVersion))
   throw new Error(`Invalid pinned Node.js version in .nvmrc: ${nodeVersion}`);
 const engineRange = packageJson.engines?.node ?? "";
 if (!satisfies(nodeVersion, engineRange))
@@ -242,7 +242,7 @@ try {
       "    .\\rea.cmd --version",
       "    .\\rea.cmd mcp doctor --json",
       "    .\\rea.cmd setup",
-      "    .\rea-mcp.cmd",
+      "    .\\rea-mcp.cmd",
       "",
       "این بسته Node.js موردنیاز را همراه خود دارد و برای اجرای CLI/MCP به " +
         "نصب سراسری Node.js نیاز ندارد.",
@@ -272,7 +272,7 @@ try {
       "  .\\rea.cmd --version",
       "  .\\rea.cmd mcp doctor --json",
       "  .\\rea.cmd setup",
-      "  .\rea-mcp.cmd",
+      "  .\\rea-mcp.cmd",
       "",
       "The required Node.js runtime is bundled. A system-wide Node.js " +
         "installation is not required.",
