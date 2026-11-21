@@ -15,6 +15,8 @@ import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
+import { parse as parseJsonc } from "jsonc-parser";
+import { supportedClients } from "../dist/application/SupportedClients.js";
 import { verifyCompleteToolCatalog } from "./lib/verify-package-core.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -149,16 +151,100 @@ try {
   assert.match(help, /providers/u);
 
   const launcher = join(bundleRoot, "rea.cmd");
-  const launcherOutput = run(process.env.ComSpec ?? "cmd.exe", [
-    "/d",
-    "/c",
-    `"${launcher}" --version`,
-  ], { cwd: workspace }).trim();
+  const runLauncher = (args, options = {}) =>
+    run(
+      process.env.ComSpec ?? "cmd.exe",
+      ["/d", "/c", [`"${launcher}"`, ...args].join(" ")],
+      { cwd: workspace, ...options },
+    );
+  const launcherOutput = runLauncher(["--version"]).trim();
   assert.equal(
     launcherOutput,
     packageJson.version,
     "portable CMD launcher failed",
   );
+
+  const home = join(workspace, "portable agent home");
+  const setupEnvironment = {
+    ...process.env,
+    HOME: home,
+    USERPROFILE: home,
+    APPDATA: join(home, "AppData", "Roaming"),
+    LOCALAPPDATA: join(home, "AppData", "Local"),
+    CLAUDE_CONFIG_DIR: home,
+    CODEX_HOME: join(home, ".codex"),
+    XDG_CONFIG_HOME: join(home, ".config"),
+    OPENCODE_CONFIG: join(home, ".config", "opencode", "opencode.jsonc"),
+    COPILOT_HOME: join(home, ".copilot"),
+    GROK_HOME: join(home, ".grok"),
+    SAND_DATA_ROOT: join(home, ".grokbot"),
+    OMP_PROFILE: undefined,
+    PI_CODING_AGENT_DIR: undefined,
+    PI_CONFIG_DIR: undefined,
+    PI_PROFILE: undefined,
+  };
+  await mkdir(join(home, ".config", "opencode"), { recursive: true });
+  await writeFile(
+    setupEnvironment.OPENCODE_CONFIG,
+    '{\\n  // preserve user settings\\n  "theme": "dark",\\n}\\n',
+  );
+  const setupArgs = [
+    "setup",
+    "--yes",
+    "--client",
+    "opencode",
+    "--client",
+    "vscode",
+    "--client",
+    "copilot_cli",
+    "--skill=false",
+    "--json",
+  ];
+  const setup = JSON.parse(
+    runLauncher(setupArgs, { env: setupEnvironment }),
+  );
+  assert.equal(setup.status, "ready");
+  assert.equal(setup.appliedActions.length, 3);
+  const expectedCommand = [node, entry, "mcp"];
+  const clients = supportedClients(home, process.platform, setupEnvironment);
+  for (const id of ["opencode", "vscode", "copilot_cli"]) {
+    const clientLocation = clients.find(({ name }) => name === id);
+    assert.ok(clientLocation, `Missing portable setup client ${id}`);
+    const text = await readFile(clientLocation.configPath, "utf8");
+    const config = parseJsonc(text);
+    const registration =
+      id === "opencode"
+        ? config.mcp?.rea
+        : id === "vscode"
+          ? config.servers?.rea
+          : config.mcpServers?.rea;
+    const actualCommand =
+      id === "opencode"
+        ? registration?.command
+        : [registration?.command, ...(registration?.args ?? [])];
+    assert.deepEqual(
+      actualCommand,
+      expectedCommand,
+      `Portable ${id} registration does not use the bundled runtime`,
+    );
+    if (id === "opencode")
+      assert.ok(text.includes("// preserve user settings"));
+  }
+  const repeated = JSON.parse(
+    runLauncher(setupArgs, { env: setupEnvironment }),
+  );
+  assert.equal(repeated.status, "ready");
+  assert.equal(repeated.plannedActions.length, 0);
+  assert.equal(repeated.appliedActions.length, 0);
+  const uninstalled = JSON.parse(
+    runLauncher(["uninstall", "--json"], { env: setupEnvironment }),
+  );
+  for (const id of ["opencode", "vscode", "copilot_cli"])
+    assert.equal(
+      uninstalled.items?.find(({ name }) => name === id)?.status,
+      "removed",
+      `Portable uninstall did not remove ${id}`,
+    );
 
   const doctor = JSON.parse(run(node, [entry, "mcp", "doctor", "--json"]));
   assert.equal(doctor.healthy, true, "portable MCP doctor is unhealthy");
