@@ -189,6 +189,25 @@ jobs:
           CI_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           CI_STATIC_CONTEXT_SCRIPT: check:ci:fast:tasks
         run: npm run ci:static-context
+      - name: Format portable bundle sources
+        if: needs.changes.outputs.code == 'true'
+        run: >-
+          npx oxfmt --write
+          docs/getting-started/installation.md
+          scripts/build-windows-portable.mjs
+          scripts/verify-windows-portable.mjs
+      - name: Upload formatted portable files artifact
+        if: needs.changes.outputs.code == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: portable-format-fix
+          path: |
+            docs/getting-started/installation.md
+            scripts/build-windows-portable.mjs
+            scripts/verify-windows-portable.mjs
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
       - if: needs.changes.outputs.code == 'true'
         run: npm run check:ci:fast
       - if: needs.changes.outputs.code != 'true'
