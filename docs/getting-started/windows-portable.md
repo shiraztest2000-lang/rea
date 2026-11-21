@@ -10,7 +10,9 @@ installation or a global npm install.
 - Windows x64 runner
 - Node.js version pinned by `.nvmrc` and npm
 - A matching `native/windows/build/manifest.json` and
-  `rea-windows-x64.node` produced by `npm run build:windows-native`
+  `rea-windows-x64.node` from the CI `windows-native-controls` artifact.
+  The native artifact builder itself runs on Linux with MinGW-w64; the portable
+  package and its runtime tests run on Windows x64.
 - Network access to the official Node.js distribution and npm package sources
 - Microsoft Visual C++ Redistributable 2015–2022 x64 on target systems where
   the required runtime libraries are not already installed
@@ -21,11 +23,14 @@ Run from the repository root:
 
 ```powershell
 npm ci
-npm run build:cached
 npm run verify:windows-native:artifact
 npm run build:windows-portable
 npm run verify:windows-portable
 ```
+
+The portable builder runs the package's full `prepack` checks before creating
+the npm archive, verifies the supplied Windows native artifact, and installs
+the production package into an isolated bundle directory.
 
 The output is written to
 `.artifacts/windows-portable/REA-<version>-windows-x64.zip`, with a SHA-256
