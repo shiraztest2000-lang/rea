@@ -174,6 +174,7 @@ try {
   const home = join(workspace, "portable agent home");
   const setupEnvironment = {
     ...process.env,
+    REA_ANALYSIS_PROVIDER: "auto",
     HOME: home,
     USERPROFILE: home,
     APPDATA: join(home, "AppData", "Roaming"),
