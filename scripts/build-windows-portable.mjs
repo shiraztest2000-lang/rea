@@ -248,7 +248,7 @@ try {
       "    .\\rea.cmd --version",
       "    .\\rea.cmd mcp doctor --json",
       "    .\\rea.cmd setup",
-      "    .\\rea-mcp.cmd",
+      "    .\rea-mcp.cmd",
       "",
       "این بسته Node.js موردنیاز را همراه خود دارد و برای اجرای CLI/MCP به " +
         "نصب سراسری Node.js نیاز ندارد.",
@@ -278,7 +278,7 @@ try {
       "  .\\rea.cmd --version",
       "  .\\rea.cmd mcp doctor --json",
       "  .\\rea.cmd setup",
-      "  .\\rea-mcp.cmd",
+      "  .\rea-mcp.cmd",
       "",
       "The required Node.js runtime is bundled. A system-wide Node.js " +
         "installation is not required.",
