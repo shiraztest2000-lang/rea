@@ -34,26 +34,38 @@ jobs:
           script: |
             const tag = process.env.TAG_NAME.trim();
             const body = process.env.RELEASE_BODY;
-            if (process.env.CONFIRM !== 'UPDATE RELEASE BODY') {
-              core.setFailed('Confirmation did not match. No release was changed.');
+            if (process.env.CONFIRM !== "UPDATE RELEASE BODY") {
+              core.setFailed(
+                "Confirmation did not match. No release was changed.",
+              );
               return;
             }
             if (!tag || !body.trim()) {
-              core.setFailed('Tag and release description are required. No release was changed.');
+              core.setFailed(
+                "Tag and release description are required. No release was changed.",
+              );
               return;
             }
             const { owner, repo } = context.repo;
             let release;
             try {
-              ({ data: release } = await github.rest.repos.getReleaseByTag({ owner, repo, tag }));
+              ({ data: release } = await github.rest.repos.getReleaseByTag({
+                owner,
+                repo,
+                tag,
+              }));
             } catch (error) {
-              core.setFailed(`Could not find an existing release for tag "${tag}". No release was changed.`);
+              core.setFailed(
+                `Could not find an existing release for tag "${tag}". No release was changed.`,
+              );
               return;
             }
             await github.rest.repos.updateRelease({
               owner,
               repo,
               release_id: release.id,
-              body
+              body,
             });
-            core.info(`Updated description for ${release.html_url}. Assets, tag, title, and source files were not changed.`);
+            core.info(
+              `Updated description for ${release.html_url}. Assets, tag, title, and source files were not changed.`,
+            );
