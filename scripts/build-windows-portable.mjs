@@ -62,11 +62,10 @@ async function downloadVerifiedNodeArchive() {
     fetch(`${base}SHASUMS256.txt`, { signal: AbortSignal.timeout(60_000) }),
     fetch(`${base}${filename}`, { signal: AbortSignal.timeout(180_000) }),
   ]);
-  if (!checksumResponse.ok || !archiveResponse.ok)
-    throw new Error(
-      `Official Node.js download failed: checksums=${checksumResponse.status}, ` +
-        `archive=${archiveResponse.status}`,
-    );
+  if (!checksumResponse.ok || !archiveResponse.ok) {
+    const details = `checksums=${checksumResponse.status}, archive=${archiveResponse.status}`;
+    throw new Error(`Official Node.js download failed: ${details}`);
+  }
   const checksums = await checksumResponse.text();
   const expected = checksums
     .split("\n")
