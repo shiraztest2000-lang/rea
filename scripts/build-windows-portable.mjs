@@ -27,6 +27,21 @@ const folderName = `REA-${packageJson.version}-windows-x64`;
 const outputDirectory = join(root, ".artifacts", "windows-portable");
 const outputArchive = join(outputDirectory, `${folderName}.zip`);
 const npmCli = process.env.npm_execpath;
+if (process.platform !== "win32" || process.arch !== "x64")
+  throw new Error(
+    "The portable Windows bundle must be built on a Windows x64 runner.",
+  );
+if (!/^\\d+\\.\\d+\\.\\d+$/u.test(nodeVersion))
+  throw new Error(`Invalid pinned Node.js version in .nvmrc: ${nodeVersion}`);
+const engineRange = packageJson.engines?.node ?? "";
+if (!satisfies(nodeVersion, engineRange))
+  throw new Error(
+    `Pinned Node.js ${nodeVersion} does not satisfy package engine range ${engineRange}`,
+  );
+if (!npmCli)
+  throw new Error(
+    "npm_execpath is required; run this builder from an npm-enabled Windows environment.",
+  );
 const temporaryRoot = join(root, ".cache");
 await mkdir(temporaryRoot, { recursive: true });
 await mkdir(outputDirectory, { recursive: true });
@@ -93,27 +108,6 @@ async function downloadVerifiedNodeArchive() {
 }
 
 try {
-  if (process.platform !== "win32" || process.arch !== "x64")
-    throw new Error(
-      "The portable Windows bundle must be built on a Windows x64 " +
-        "runner.",
-    );
-  if (!/^\d+\.\d+\.\d+$/u.test(nodeVersion))
-    throw new Error(`Invalid pinned Node.js version in .nvmrc: ${nodeVersion}`);
-  const engineRange = packageJson.engines?.node ?? "";
-  if (!satisfies(nodeVersion, engineRange)) {
-    const message =
-      `Pinned Node.js ${nodeVersion} does not satisfy ` +
-      `package engine range ${engineRange}`;
-    throw new Error(message);
-  }
-  if (!npmCli) {
-    throw new Error(
-      "npm_execpath is required; run this builder from an npm-enabled " +
-        "Windows environment.",
-    );
-  }
-
   const packedDirectory = join(workspace, "packed");
   const bundleParent = join(workspace, "bundle");
   const bundleRoot = join(bundleParent, folderName);
