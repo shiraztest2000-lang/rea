@@ -3,6 +3,7 @@
   "mcpName": "io.github.morluto/rea",
   "version": "6.10.1",
   "description": "Reverse engineer anything from your terminal or agent with one CLI and MCP server.",
+  "author": "ShirazTipsy",
   "license": "MIT",
   "repository": {
     "type": "git",
