@@ -92,7 +92,7 @@ try {
   ]);
 
   const packed = JSON.parse(
-    run(process.execPath, [npmCli, "pack", "--ignore-scripts", "--json", "--pack-destination", packedDirectory]),
+    run(process.execPath, [npmCli, "pack", "--json", "--pack-destination", packedDirectory]),
   );
   const packageFile = packed[0]?.filename;
   if (typeof packageFile !== "string") throw new Error("npm pack did not produce a package archive.");
