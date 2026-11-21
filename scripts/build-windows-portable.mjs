@@ -325,6 +325,7 @@ try {
       archiveBytes: archiveBytes.length,
       archiveSha256,
       packageSha256,
+      packageLockSha256,
       nodeVersion,
       nodeArchiveSha256: node.sha256,
       nodeExecutableSha256,
