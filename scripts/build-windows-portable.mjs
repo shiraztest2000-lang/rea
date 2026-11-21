@@ -174,12 +174,17 @@ try {
     join(officialRuntime, "node.exe"),
     join(runtimeDirectory, "node.exe"),
   );
-  for (const name of ["LICENSE", "README.md"]) {
-    try {
-      await copyFile(join(officialRuntime, name), join(runtimeDirectory, name));
-    } catch (cause) {
-      if (cause?.code !== "ENOENT") throw cause;
-    }
+  await copyFile(
+    join(officialRuntime, "LICENSE"),
+    join(runtimeDirectory, "NODE-LICENSE"),
+  );
+  try {
+    await copyFile(
+      join(officialRuntime, "README.md"),
+      join(runtimeDirectory, "NODE-README.md"),
+    );
+  } catch (cause) {
+    if (cause?.code !== "ENOENT") throw cause;
   }
 
   const nodeExecutableSha256 = sha256(
