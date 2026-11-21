@@ -122,6 +122,16 @@ try {
   assert.match(manifest.nodeArchiveSha256, /^[a-f0-9]{64}$/u);
   assert.match(manifest.nodeExecutableSha256, /^[a-f0-9]{64}$/u);
   assert.match(manifest.npmPackageSha256, /^[a-f0-9]{64}$/u);
+  assert.match(manifest.packageLockSha256, /^[a-f0-9]{64}$/u);
+  const packageLock = await readFile(join(app, "package-lock.json"));
+  const parsedPackageLock = JSON.parse(packageLock.toString("utf8"));
+  assert.equal(parsedPackageLock.packages?.[""]?.name, packageJson.name);
+  assert.equal(parsedPackageLock.packages?.[""]?.version, packageJson.version);
+  assert.equal(
+    sha256(packageLock),
+    manifest.packageLockSha256,
+    "bundled package-lock.json digest mismatch",
+  );
 
   const node = join(bundleRoot, "runtime", "node.exe");
   const app = join(bundleRoot, "app");
@@ -130,6 +140,7 @@ try {
     node,
     join(bundleRoot, "runtime", "NODE-LICENSE"),
     entry,
+    join(app, "package-lock.json"),
     join(app, "dist", "mcp", "main.js"),
     join(app, "native", "windows", "build", "manifest.json"),
     join(app, "native", "windows", "build", "rea-windows-x64.node"),
