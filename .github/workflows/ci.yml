@@ -697,7 +697,9 @@ jobs:
     name: Build bundled Windows x64 native controls
     needs: [changes, static]
     # The Windows package lane also consumes this native artifact.
-    if: needs.changes.outputs.runtime == 'true' || needs.changes.outputs.package == 'true'
+    if: >-
+      needs.changes.outputs.runtime == 'true' ||
+      needs.changes.outputs.package == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
