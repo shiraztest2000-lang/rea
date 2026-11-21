@@ -5,12 +5,12 @@ import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import {
   access,
+  mkdir,
   mkdtemp,
   readFile,
   rm,
-  stat,
 } from "node:fs/promises";
-import { dirname, join, resolve, sep } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
@@ -22,7 +22,7 @@ const archive = resolve(
 );
 const expectedRoot = `REA-${packageJson.version}-windows-x64`;
 const workspaceRoot = join(root, ".cache");
-await import("node:fs/promises").then(({ mkdir }) => mkdir(workspaceRoot, { recursive: true }));
+await mkdir(workspaceRoot, { recursive: true });
 const workspace = await mkdtemp(join(workspaceRoot, "rea-windows-portable-verify-"));
 
 function run(command, args, options = {}) {
