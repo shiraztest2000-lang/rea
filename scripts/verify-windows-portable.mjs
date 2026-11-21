@@ -17,7 +17,10 @@ import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { parse as parseJsonc } from "jsonc-parser";
 import { supportedClients } from "../dist/application/SupportedClients.js";
 import { verifyCompleteToolCatalog } from "./lib/verify-package-core.mjs";
-import { VerifierFixture } from "./lib/verifier-fixture.mjs";
+import {
+  VerifierFixture,
+  withVerifierFixture,
+} from "./lib/verifier-fixture.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const packageJson = JSON.parse(
@@ -66,7 +69,7 @@ function run(command, args, options = {}) {
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 let client;
 let transport;
-try {
+await withVerifierFixture(fixture, async () => {
   if (process.platform !== "win32" || process.arch !== "x64")
     throw new Error("Portable bundle verification must run on Windows x64.");
   const archiveBytes = await readFile(archive);
@@ -346,6 +349,4 @@ try {
     mcpPrompts: prompts.prompts.length,
     author: manifest.author,
   }, null, 2)}\n`);
-} finally {
-  await fixture.release();
-}
+});
