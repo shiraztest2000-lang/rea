@@ -161,7 +161,7 @@ try {
       `"%REA_PORTABLE_ROOT%runtime\\node.exe" "%REA_PORTABLE_ROOT%${entrypoint}" ${command}%*`,
       "exit /b %ERRORLEVEL%",
       "",
-    ].join("\\r\\n");
+    ].join("\r\n");
   await writeFile(join(bundleRoot, "rea.cmd"), launcher(""), "utf8");
   await writeFile(join(bundleRoot, "rea-mcp.cmd"), launcher("mcp "), "utf8");
   await writeFile(
