@@ -580,7 +580,7 @@ jobs:
     needs: [changes, test-source, test-shard]
     if: ${{ !cancelled() && needs.changes.outputs.tier != 'reused' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Require successful change classification
         env:
