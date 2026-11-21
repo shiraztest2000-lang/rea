@@ -148,11 +148,11 @@ try {
     "bundled node.exe digest mismatch",
   );
 
-  const nodeVersion = run(node, ["--version"]).trim();
+  const nodeVersion = run(node, ["--version"], { cwd: workspace }).trim();
   assert.equal(nodeVersion, `v${manifest.nodeVersion}`);
-  const version = run(node, [entry, "--version"]).trim();
+  const version = run(node, [entry, "--version"], { cwd: workspace }).trim();
   assert.equal(version, packageJson.version);
-  const help = run(node, [entry, "--help"]);
+  const help = run(node, [entry, "--help"], { cwd: workspace });
   assert.match(help, /inspect/u);
   assert.match(help, /providers/u);
 
@@ -258,7 +258,9 @@ try {
   assert.ok(preservedOpenCode.includes("// preserve user settings"));
   assert.equal(parseJsonc(preservedOpenCode).theme, "dark");
 
-  const doctor = JSON.parse(run(node, [entry, "mcp", "doctor", "--json"]));
+  const doctor = JSON.parse(
+    run(node, [entry, "mcp", "doctor", "--json"], { cwd: workspace }),
+  );
   assert.equal(doctor.healthy, true, "portable MCP doctor is unhealthy");
   assert.equal(
     doctor.inventory?.tools?.observed,
