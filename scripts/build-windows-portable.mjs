@@ -147,7 +147,13 @@ try {
   await access(join(installedPackage, "scripts", "rea.mjs"));
   await access(join(installedPackage, "dist", "mcp", "main.js"));
   await access(
-    join(installedPackage, "native", "windows", "build", "rea-windows-x64.node"),
+    join(
+      installedPackage,
+      "native",
+      "windows",
+      "build",
+      "rea-windows-x64.node",
+    ),
   );
   await access(
     join(installedPackage, "native", "windows", "build", "manifest.json"),
@@ -210,14 +216,6 @@ try {
       "",
     ].join("\r\n");
   };
-    [
-      "@echo off",
-      "setlocal",
-      'set "REA_PORTABLE_ROOT=%~dp0"',
-      `"%REA_PORTABLE_ROOT%runtime\\node.exe" "%REA_PORTABLE_ROOT%${entrypoint}" ${command}%*`,
-      "exit /b %ERRORLEVEL%",
-      "",
-    ].join("\r\n");
   await writeFile(join(bundleRoot, "rea.cmd"), launcher(""), "utf8");
   await writeFile(join(bundleRoot, "rea-mcp.cmd"), launcher("mcp "), "utf8");
   await writeFile(
