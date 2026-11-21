@@ -8,6 +8,7 @@ import {
   mkdir,
   readFile,
   stat,
+  writeFile,
 } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -101,6 +102,7 @@ try {
 
   run("tar.exe", ["-xf", archive, "-C", workspace]);
   const bundleRoot = join(workspace, expectedRoot);
+  const app = join(bundleRoot, "app");
   const manifest = JSON.parse(
     await readFile(join(bundleRoot, "portable-manifest.json"), "utf8"),
   );
@@ -149,7 +151,6 @@ try {
   );
 
   const node = join(bundleRoot, "runtime", "node.exe");
-  const app = join(bundleRoot, "app");
   const entry = join(app, "scripts", "rea.mjs");
   for (const path of [
     node,
