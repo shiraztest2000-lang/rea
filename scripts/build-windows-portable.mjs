@@ -74,6 +74,7 @@ try {
   if (!/^\d+\.\d+\.\d+$/u.test(nodeVersion))
     throw new Error(`Invalid pinned Node.js version in .nvmrc: ${nodeVersion}`);
   if (npmCli) {
+    run(process.execPath, [npmCli, "run", "build:cached"]);
     run(process.execPath, [npmCli, "run", "verify:windows-native:artifact"]);
   } else {
     throw new Error("npm_execpath is required; run this builder from an npm-enabled Windows environment.");
