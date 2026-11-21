@@ -29,6 +29,8 @@ const npmCli = process.env.npm_execpath;
 const temporaryRoot = join(root, ".cache");
 await mkdir(temporaryRoot, { recursive: true });
 await mkdir(outputDirectory, { recursive: true });
+await rm(outputArchive, { force: true });
+await rm(`${outputArchive}.sha256`, { force: true });
 const workspace = await mkdtemp(join(temporaryRoot, "rea-windows-portable-"));
 
 function run(command, args, options = {}) {
@@ -289,8 +291,6 @@ try {
     "utf8",
   );
 
-  await rm(outputArchive, { force: true });
-  await rm(`${outputArchive}.sha256`, { force: true });
   run("tar.exe", [
     "-a",
     "-c",
