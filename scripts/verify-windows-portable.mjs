@@ -273,6 +273,13 @@ try {
     "portable MCP tool inventory is incomplete",
   );
 
+  client = new Client({ name: "rea-portable-verifier", version: "1.0.0" });
+  fixture.releaseAfter(async () => {
+    if (client !== undefined) {
+      await client.close();
+      client = undefined;
+    }
+  });
   transport = new StdioClientTransport({
     command: process.env.ComSpec ?? "cmd.exe",
     args: ["/d", "/c", `"${join(bundleRoot, "rea-mcp.cmd")}"`],
@@ -280,7 +287,12 @@ try {
     env: setupEnvironment,
     stderr: "pipe",
   });
-  client = new Client({ name: "rea-portable-verifier", version: "1.0.0" });
+  fixture.releaseAfter(async () => {
+    if (transport !== undefined) {
+      await transport.close();
+      transport = undefined;
+    }
+  });
   await client.connect(transport);
   const toolCatalog = await verifyCompleteToolCatalog(client);
   const prompts = await client.listPrompts();
@@ -308,9 +320,5 @@ try {
     author: manifest.author,
   }, null, 2)}\n`);
 } finally {
-  try { await client?.close(); } finally {
-    try { await transport?.close(); } finally {
-      await fixture.release();
-    }
-  }
+  await fixture.release();
 }
