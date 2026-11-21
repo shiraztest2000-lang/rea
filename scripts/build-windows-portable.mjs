@@ -45,9 +45,9 @@ if (!npmCli)
 const temporaryRoot = join(root, ".cache");
 await mkdir(temporaryRoot, { recursive: true });
 await mkdir(outputDirectory, { recursive: true });
-await rm(outputArchive, { force: true });
-await rm(`${outputArchive}.sha256`, { force: true });
 const workspace = await mkdtemp(join(temporaryRoot, "rea-windows-portable-"));
+const stagedArchive = join(workspace, `${folderName}.zip`);
+const stagedChecksum = `${stagedArchive}.sha256`;
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
@@ -297,18 +297,20 @@ try {
     "-a",
     "-c",
     "-f",
-    outputArchive,
+    stagedArchive,
     "-C",
     bundleParent,
     folderName,
   ]);
-  const archiveBytes = await readFile(outputArchive);
+  const archiveBytes = await readFile(stagedArchive);
   const archiveSha256 = sha256(archiveBytes);
   await writeFile(
-    `${outputArchive}.sha256`,
+    stagedChecksum,
     `${archiveSha256}  ${folderName}.zip\n`,
     "utf8",
   );
+  await copyFile(stagedArchive, outputArchive);
+  await copyFile(stagedChecksum, `${outputArchive}.sha256`);
   process.stdout.write(
     `${JSON.stringify({
       ok: true,
