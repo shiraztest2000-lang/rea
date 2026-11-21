@@ -2,8 +2,8 @@
 
 The portable build is a relocatable Windows x64 ZIP containing the exact REA npm
 runtime package, its production dependencies, the matching Windows x64 native
-addon, and an official Node.js runtime. It does not require a system-wide Node.js
-installation or a global npm install.
+addon, and an official Node.js runtime. It does not require a system-wide
+Node.js installation or a global npm install.
 
 ## Build requirements
 
