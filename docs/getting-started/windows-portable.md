@@ -31,8 +31,10 @@ npm run verify:windows-portable
 ```
 
 The portable builder runs the package's full `prepack` checks before creating
-the npm archive, verifies the supplied Windows native artifact, and installs
-the production package into an isolated bundle directory.
+the npm archive and verifies the supplied Windows native artifact. It extracts
+the packed files into the bundle and runs `npm ci --omit=dev` with the exact
+repository `package-lock.json`, so transitive production dependencies are
+pinned rather than resolved again during packaging.
 
 The output is written to
 `.artifacts/windows-portable/REA-<version>-windows-x64.zip`, with a SHA-256
