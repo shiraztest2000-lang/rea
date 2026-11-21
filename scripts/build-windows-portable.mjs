@@ -204,13 +204,15 @@ try {
     "utf8",
   );
 
-  const powershellPath = (value) => value.replaceAll("'", "''");
   await rm(outputArchive, { force: true });
-  run("powershell.exe", [
-    "-NoProfile",
-    "-NonInteractive",
-    "-Command",
-    `Compress-Archive -LiteralPath '${powershellPath(bundleRoot)}' -DestinationPath '${powershellPath(outputArchive)}' -CompressionLevel Optimal -Force`,
+  run("tar.exe", [
+    "-a",
+    "-c",
+    "-f",
+    outputArchive,
+    "-C",
+    bundleParent,
+    folderName,
   ]);
   const archiveBytes = await readFile(outputArchive);
   const archiveSha256 = sha256(archiveBytes);
