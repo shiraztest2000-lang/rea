@@ -51,7 +51,7 @@ Extract the ZIP anywhere and run from its root:
 .\rea.cmd --version
 .\rea.cmd mcp doctor --json
 .\rea.cmd setup
-.\\rea-mcp.cmd
+.\rea-mcp.cmd
 ```
 
 The bundle is relocatable. Extract it to its final location before running
