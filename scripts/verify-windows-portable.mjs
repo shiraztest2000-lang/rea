@@ -108,6 +108,12 @@ try {
   assert.equal(manifest.version, packageJson.version);
   assert.equal(manifest.platform, "win-x64");
   assert.equal(manifest.architecture, "x64");
+  assert.equal(manifest.npmPackage, packageJson.name);
+  assert.match(manifest.nodeVersion, /^\\d+\\.\\d+\\.\\d+$/u);
+  assert.equal(
+    manifest.nodeArchive,
+    `node-v${manifest.nodeVersion}-win-x64.zip`,
+  );
   assert.equal(manifest.author, "ShirazTipsy");
   assert.equal(
     manifest.repository,
