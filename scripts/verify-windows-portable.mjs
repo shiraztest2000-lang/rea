@@ -77,7 +77,7 @@ try {
   );
 
   const listing = run("tar.exe", ["-tf", archive])
-    .split(/\\r?\\n/u)
+    .split(/\r?\n/u)
     .filter(Boolean);
   assert.ok(listing.length > 0, "portable ZIP is empty");
   for (const entry of listing) {
