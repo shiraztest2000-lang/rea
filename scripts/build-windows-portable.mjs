@@ -72,9 +72,9 @@ async function downloadVerifiedNodeArchive() {
   }
   const checksums = await checksumResponse.text();
   const expected = checksums
-    .split("\n")
-    .find((line) => line.slice(66) === filename)
-    ?.slice(0, 64);
+    .split(/\r?\n/u)
+    .map((line) => line.trim().split(/\s+/u))
+    .find(([, name]) => name === filename)?.[0];
   if (!expected || !/^[a-f0-9]{64}$/u.test(expected))
     throw new Error(`Official Node.js checksum list omitted ${filename}`);
   const bytes = Buffer.from(await archiveResponse.arrayBuffer());
