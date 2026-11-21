@@ -24,7 +24,9 @@ const archive = resolve(
 const expectedRoot = `REA-${packageJson.version}-windows-x64`;
 const workspaceRoot = join(root, ".cache");
 await mkdir(workspaceRoot, { recursive: true });
-const workspace = await mkdtemp(join(workspaceRoot, "rea-windows-portable-verify-"));
+const workspaceParent = join(workspaceRoot, "portable space test");
+await mkdir(workspaceParent, { recursive: true });
+const workspace = await mkdtemp(join(workspaceParent, "rea-windows-portable-verify-"));
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
@@ -72,6 +74,7 @@ try {
   assert.equal(manifest.author, "ShirazTipsy");
   assert.equal(manifest.repository, "https://github.com/shiraztest2000-lang/rea");
   assert.match(manifest.nodeArchiveSha256, /^[a-f0-9]{64}$/u);
+  assert.match(manifest.nodeExecutableSha256, /^[a-f0-9]{64}$/u);
   assert.match(manifest.npmPackageSha256, /^[a-f0-9]{64}$/u);
 
   const node = join(bundleRoot, "runtime", "node.exe");
@@ -90,6 +93,11 @@ try {
   ])
     await access(path);
   assert.ok((await stat(node)).size > 1_000_000, "bundled node.exe is unexpectedly small");
+  assert.equal(
+    sha256(await readFile(node)),
+    manifest.nodeExecutableSha256,
+    "bundled node.exe digest mismatch",
+  );
 
   const nodeVersion = run(node, ["--version"]).trim();
   assert.equal(nodeVersion, `v${manifest.nodeVersion}`);
@@ -102,10 +110,9 @@ try {
   const launcher = join(bundleRoot, "rea.cmd");
   const launcherOutput = run(process.env.ComSpec ?? "cmd.exe", [
     "/d",
-    "/s",
     "/c",
     `"${launcher}" --version`,
-  ]).trim();
+  ], { cwd: workspace }).trim();
   assert.equal(launcherOutput, packageJson.version, "portable CMD launcher failed");
 
   const doctor = JSON.parse(run(node, [entry, "mcp", "doctor", "--json"]));
@@ -117,8 +124,9 @@ try {
   );
 
   transport = new StdioClientTransport({
-    command: node,
-    args: [entry, "mcp"],
+    command: process.env.ComSpec ?? "cmd.exe",
+    args: ["/d", "/c", `"${join(bundleRoot, "rea-mcp.cmd")}"`],
+    cwd: workspace,
     env: { ...process.env },
     stderr: "pipe",
   });
