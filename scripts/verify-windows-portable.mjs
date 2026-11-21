@@ -115,6 +115,13 @@ try {
     `node-v${manifest.nodeVersion}-win-x64.zip`,
   );
   assert.equal(manifest.author, "ShirazTipsy");
+  assert.equal(packageJson.author, "ShirazTipsy");
+  const packagedMetadata = JSON.parse(
+    await readFile(join(app, "package.json"), "utf8"),
+  );
+  assert.equal(packagedMetadata.name, packageJson.name);
+  assert.equal(packagedMetadata.version, packageJson.version);
+  assert.equal(packagedMetadata.author, "ShirazTipsy");
   assert.equal(
     manifest.repository,
     "https://github.com/shiraztest2000-lang/rea",
